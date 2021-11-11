@@ -64,6 +64,10 @@ enum KeyType {
     KEY_SAMPLE_AES
 };
 
+unsigned char* chiper_key[32] = {0};
+int chiper_key_length = 0;
+
+
 struct segment {
     int64_t duration;
     int64_t url_offset;
@@ -1100,12 +1104,17 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
     av_log(pls->parent, AV_LOG_VERBOSE, "HLS request for url '%s', offset %"PRId64", playlist %d\n",
            seg->url, seg->url_offset, pls->index);
 
+    av_log(NULL, AV_LOG_WARNING, "chiper_key_length1: %d\n",chiper_key_length);
+    //modify by kunlun
     if (seg->key_type == KEY_NONE) {
         ret = open_url(pls->parent, &pls->input, seg->url, c->avio_opts, opts, &is_http);
     } else if (seg->key_type == KEY_AES_128) {
         AVDictionary *opts2 = NULL;
         char iv[33], key[33], url[MAX_URL_SIZE];
-        if (strcmp(seg->key, pls->key_url)) {
+        if (chiper_key_length != 0){
+            av_log(NULL, AV_LOG_WARNING, "use default chiper: %s %d\n",chiper_key,chiper_key_length);
+            memcpy(pls->key,chiper_key,chiper_key_length);
+        } else if (strcmp(seg->key, pls->key_url)) {
             AVIOContext *pb;
             if (open_url(pls->parent, &pb, seg->key, c->avio_opts, opts, NULL) == 0) {
                 ret = avio_read(pb, pls->key, sizeof(pls->key));
@@ -2119,6 +2128,22 @@ static int hls_probe(AVProbeData *p)
         return AVPROBE_SCORE_MAX;
     return 0;
 }
+
+// add by kunlun
+
+int avformat_hls_set_global_cipher(unsigned char* key,int key_size){
+    if (key_size>32){
+        av_log(NULL, AV_LOG_WARNING, "avformat_hls_set_global_cipher  key: %s len:%d \n", key,key_size);
+        return -1;
+    }
+
+    memset(chiper_key,0,32);
+    memcpy(chiper_key,key,key_size);
+    chiper_key_length = key_size;;
+
+    return 0;
+}
+
 
 #define OFFSET(x) offsetof(HLSContext, x)
 #define FLAGS AV_OPT_FLAG_DECODING_PARAM

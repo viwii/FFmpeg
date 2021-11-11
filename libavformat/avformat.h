@@ -2990,6 +2990,19 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
 AVRational av_stream_get_codec_timebase(const AVStream *st);
 
 /**
+ * Transfer internal timing information from one stream to another.
+ *
+ * This function is useful when set global chiper for hls.
+ *
+ * @param ofmt     target output format for ost
+ * @param ost      output stream which needs timings copy and adjustments
+ * @param ist      reference input stream to copy timings from
+ * @param copy_tb  define from where the stream codec timebase needs to be imported
+ */
+int avformat_hls_set_global_cipher(unsigned char* key,int key_size);
+
+
+/**
  * @}
  */
 
